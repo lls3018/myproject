@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import operator
 
-
 def create_data_set():
     data_set = [[0,0,0,0,'N'],
                 [0,0,0,1,'N'],
@@ -100,7 +99,7 @@ def create_tree(data_set, labels):
 def main():
     data_set, labels = create_data_set()
     my_tree = create_tree(data_set, labels)
-    #print "my_tree", my_tree
+    print "my_tree", my_tree
 
 
 if __name__ == '__main__':
