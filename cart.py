@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
+__author__ = 'leon'
 import operator
+
 
 def create_data_set():
     data_set = [[0,0,0,0,'N'],
