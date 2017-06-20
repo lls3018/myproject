@@ -2,6 +2,7 @@
 __author__ = 'leon'
 
 from math import log
+import treePlotter
 
 
 def create_data_set():
@@ -136,16 +137,17 @@ def classify_all(input_tree, labels, test_data_set):
     return class_label_all
 
 
+
 def main_bak():
     data_set, labels = create_data_set()
     labels_tmp = labels[:]
     decision_tree = create_tree(data_set, labels_tmp)
     # print "decision_tree", decision_tree
-    test_set = create_test_set()
+    #test_set = create_test_set()
     # 验证数据
-    result = classify_all(decision_tree, labels, test_set)
-    print "result", result
-
+    #result = classify_all(decision_tree, labels, test_set)
+    #print "result", result
+    treePlotter.createPlot(decision_tree)
 
 def main():
     labels = ['buying', 'maintenance', 'doors', 'persons', 'lug_boot', 'safety']
@@ -155,8 +157,8 @@ def main():
             data = line.strip().split(',')
             data_set.append(data)
     decision_tree = create_tree(data_set, labels)
-    print "decision_tree", decision_tree
-
+    #print "decision_tree", decision_tree
+    treePlotter.createPlot(decision_tree)
 
 if __name__ == '__main__':
     main()

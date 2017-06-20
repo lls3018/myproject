@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 __author__ = 'leon'
 import operator
+import treePlotter
 
 
 def create_data_set():
@@ -101,7 +102,8 @@ def create_tree(data_set, labels):
 def main():
     data_set, labels = create_data_set()
     my_tree = create_tree(data_set, labels)
-    print "my_tree", my_tree
+    #print "my_tree", my_tree
+    treePlotter.createPlot(my_tree)
 
 
 if __name__ == '__main__':
