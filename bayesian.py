@@ -46,8 +46,11 @@ def trans_bayes(trans_matrix, train_category):
     words_num = len(trans_matrix[0])
     # 计算整片文档矩阵属于侮辱性文档(每一行为一个文档)的概率
     p_abusive = sum(train_category) / float(len(train_category))
-    p0_num = p1_num = zeros(words_num)
-    p0_denom = p1_denom = 0.0
+    p0_num = ones(words_num)
+    p1_num = ones(words_num)
+    #print "words_num",words_num
+    p0_denom = 2.0
+    p1_denom = 2.0
     # 遍历整个文档矩阵
     for i in range(docs_num):
         if train_category[i] == 1:
@@ -55,18 +58,23 @@ def trans_bayes(trans_matrix, train_category):
             p1_num += trans_matrix[i]
             # 侮辱性文档中的词汇量
             p1_denom += sum(trans_matrix[i])
-            print "p1_num",p1_num
-            print "sum(trans_matrix[i])",sum(trans_matrix[i])
         else:
             # 非侮辱性文档，向量相加
             p0_num += trans_matrix[i]
             # 非侮辱性文档中的词汇量
             p0_denom += sum(trans_matrix[i])
-    #
-    p1_vector = p1_num / p1_denom
-    print "sum(p1_vector)",sum(p1_vector)
-    p0_vector = p0_num / p0_denom
+    # 计算每个侮辱性词汇在侮辱性文档中出现的概率
+    p1_vector = log(p1_num / p1_denom)
+    #print "p1_vector",p1_vector
+    # 计算每个侮辱性词汇在非侮辱性文档中出现的概率
+    p0_vector = log(p0_num / p0_denom)
+    #print "p0_vector",p0_vector
     return p0_vector, p1_vector, p_abusive
+
+
+def classify_nb(vector_to_classify, p0_vector, p1_vector, p_class):
+    pass
+
 
 
 if __name__ == '__main__':
@@ -79,9 +87,7 @@ if __name__ == '__main__':
     for post in posts_lists:
         train_mat.append(set_words_to_vector(vocab_list, post))
     p0, p1, pab = trans_bayes(train_mat, class_list)
-    #print p0, p1, pab
-
-
+    print p0, p1
 
 
 
