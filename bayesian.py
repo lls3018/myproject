@@ -73,8 +73,11 @@ def trans_bayes(trans_matrix, train_category):
 
 
 def classify_nb(vector_to_classify, p0_vector, p1_vector, p_class):
-    pass
+    p1 = sum(vector_to_classify * p0_vector)
 
+
+def testing_nb():
+    pass
 
 
 if __name__ == '__main__':
@@ -88,11 +91,5 @@ if __name__ == '__main__':
         train_mat.append(set_words_to_vector(vocab_list, post))
     p0, p1, pab = trans_bayes(train_mat, class_list)
     print p0, p1
-
-
-
-
-
-
 
 
