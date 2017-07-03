@@ -61,6 +61,22 @@ def stochastic_grad_ascent0(data_matrix, class_labels):
     return weight
 
 
+def stochastic_grad_ascent1(data_matrix, class_labels, num_iter=150):
+    m, n = shape(data_matrix)
+    weights = ones(n)
+    for j in range(num_iter):
+        data_index = range(m)
+        for i in range(m):
+            # 每次迭代时需要调整
+            alpha = 4/(1.0 + j + i) + 0.4
+            rand_index = int(random.uniform(0, len(data_index)))
+            h = sigmoid(sum(data_matrix[rand_index]*weights))
+            error = class_labels[rand_index] - h
+            weights = weights + alpha * error * data_matrix[rand_index]
+            del data_index[rand_index]
+    return weights
+
+
 def colic_test():
     f_train = open('C:\Users\user\Desktop\work\projects\myproject\data\horseColicTraining.txt')
     f_test = open('C:\Users\user\Desktop\work\projects\myproject\data\horseColicTest.txt')
@@ -104,7 +120,7 @@ def plot_best_fit(weights):
 
 if __name__ == '__main__':
     data_array, label_mat = loadDataSet()
-    weights = stochastic_grad_ascent0(array(data_array), label_mat)
+    weights = stochastic_grad_ascent1(array(data_array), label_mat)
     plot_best_fit(weights)
 
 
