@@ -38,22 +38,38 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
                 # 如果两个向量都不能被优化，退出循环
         # 如果所有向量都不能被优化，增加迭代数目，继续下一循环
     data_matrix = mat(data_mat_in)
+    #print 'data_matrix',data_matrix
     label_matrix= mat(class_labels).transpose()
+    #print "label_matrix",label_matrix
     #print "class_labels",class_labels
     #print "label_mat",label_mat
     b = 0
     m, n = shape(data_matrix)
     alphas = mat(zeros((m, 1)))
+    #print "alphas",alphas
     iter = 0
-    while ( iter < max_inter):
+    while (iter < max_inter):
         alpha_pairs_changed = 0
         for i in range(m):
-            fXi = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[i:].T)) + b
+            #print "alphas",alphas
+            print "data_matrix*data_matrix[i:].T)",data_matrix[i,:]
+            fXi = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[i,:].T)) + b
+            #print "fXi",fXi
+            #
             Ei = fXi - float(label_matrix[i])
             # 如果alpha可以更改进入优化过程
             if ((label_matrix[i]*Ei < -error_tolerant) and (alphas[i] < C)) or \
                     ((label_matrix[i]*Ei > error_tolerant) and alphas[i] > 0):
+                # 随机选出第二个alphas
                 j = select_jrand(i, m)
+                fXj = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[j,:].T)) + b
+                Ej = fXi - float(label_matrix[j])
+                alpha_i_old = alphas[i].copy()
+                alpha_j_old = alphas[j].copy()
+
+
+
+        iter += 1
 
 
 
@@ -61,14 +77,8 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
 
 if __name__ == '__main__':
     data_array, label_array = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\SvmTestSet.txt')
+    #print "data_array",data_array
     smo_sample(data_array, label_array, 0.6, 0.001, 40)
-
-
-
-
-
-
-
 
 
 
