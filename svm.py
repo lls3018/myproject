@@ -20,6 +20,14 @@ def select_jrand(i, m):
     return j
 
 
+def clip_alpha(aj, H, L):
+    if aj > H:
+        aj = H
+    if L > aj:
+        aj = L
+    return aj
+
+
 def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
     '''
     :param data_mat_in:  数据集
@@ -53,20 +61,50 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
         for i in range(m):
             #print "alphas",alphas
             print "data_matrix*data_matrix[i:].T)",data_matrix[i,:]
+            # 目标函数
             fXi = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[i,:].T)) + b
             #print "fXi",fXi
-            #
+            # 误差
             Ei = fXi - float(label_matrix[i])
-            # 如果alpha可以更改进入优化过程
+            # α满足优化条件时进行优化
             if ((label_matrix[i]*Ei < -error_tolerant) and (alphas[i] < C)) or \
                     ((label_matrix[i]*Ei > error_tolerant) and alphas[i] > 0):
-                # 随机选出第二个alphas
+                # 随机选出另一个α与它进行配对优化，因为∑αy = 0 这个约束条件所以必须一对一对优化否则总和不等于0
                 j = select_jrand(i, m)
+                # 目标函数j的表达式
                 fXj = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[j,:].T)) + b
+                # 计算其误差
                 Ej = fXi - float(label_matrix[j])
+                # 取出两个系数α
                 alpha_i_old = alphas[i].copy()
                 alpha_j_old = alphas[j].copy()
-
+                # 保证α 在0-C之间
+                if (label_matrix[i] != label_matrix[j]):
+                    # 如果两个参数都在超平面一个方向, L为α 最小集合中的最大值，H为α最大集合中的到最小值
+                    L = max(0, alphas[j] - alphas[i])
+                    H = min(C, C + alphas[j] - alphas[i])
+                else:
+                    L = max(0, alphas[j] + alphas[i] + C)
+                    H = min(C, alphas[j] + alphas[i])
+                if L == H:
+                    # 不懂
+                    print "L==H"
+                    continue
+                #
+                eta = 2.0 * data_matrix[i,:] * data_matrix[j,:].T - \
+                    data_matrix[i,:] * data_matrix[i,:].T - \
+                    data_matrix[j,:] * data_matrix[j,:].T
+                if eta > 0:
+                    continue
+                alphas[j] -= label_matrix[j]*(Ei-Ej)/eta
+                alphas[j] = clip_alpha(alphas[j], H, j)
+                if (abs(alphas[j] - alpha_j_old) < 0.00001):
+                    continue
+                alphas[i] += label_matrix[j] * label_matrix[i] * (alpha_j_old - alphas[j])
+                b1 = b - Ei - label_matrix[i] * (alphas[i] - alpha_i_old)*\
+                    data_matrix[i,:]*data_matrix[i,:].T - \
+                    label_matrix[j]*(alphas[j] - alpha_j_old)* \
+                    data_matrix[j,:]*data_matrix[j,:].T
 
 
         iter += 1
