@@ -98,18 +98,28 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
                     continue
                 alphas[j] -= label_matrix[j]*(Ei-Ej)/eta
                 alphas[j] = clip_alpha(alphas[j], H, j)
-                if (abs(alphas[j] - alpha_j_old) < 0.00001):
+                if (abs(alphas[j] - alpha_j_old)     < 0.00001):
                     continue
                 alphas[i] += label_matrix[j] * label_matrix[i] * (alpha_j_old - alphas[j])
                 b1 = b - Ei - label_matrix[i] * (alphas[i] - alpha_i_old)*\
                     data_matrix[i,:]*data_matrix[i,:].T - \
                     label_matrix[j]*(alphas[j] - alpha_j_old)* \
                     data_matrix[j,:]*data_matrix[j,:].T
-
-
-        iter += 1
-
-
+                b2 = b-Ej-label_matrix[i]*(alphas[i] - alpha_i_old)*\
+                    data_matrix[i,:]*data_matrix[j,:].T - \
+                    label_matrix[j,:]*data_matrix[j,:].T
+                if (0 < alphas[i]) and (C > alphas[i]):
+                    b = b1
+                elif (0 < alphas[i]) and (C > alphas[j]):
+                    b = b2
+                else:
+                    b = (b1 + b2)/2.0
+                alpha_pairs_changed += 1
+        if alpha_pairs_changed == 0:
+            iter += 1
+        else:
+            iter = 0
+    return b, alphas
 
 
 
