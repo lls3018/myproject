@@ -58,9 +58,10 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
     iter = 0
     while (iter < max_inter):
         alpha_pairs_changed = 0
+        print "iter",iter
         for i in range(m):
             #print "alphas",alphas
-            print "data_matrix*data_matrix[i:].T)",data_matrix[i,:]
+            #print "data_matrix*data_matrix[i:].T)",data_matrix[i,:]
             # 目标函数
             fXi = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[i,:].T)) + b
             #print "fXi",fXi
@@ -98,16 +99,17 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
                     continue
                 alphas[j] -= label_matrix[j]*(Ei-Ej)/eta
                 alphas[j] = clip_alpha(alphas[j], H, j)
-                if (abs(alphas[j] - alpha_j_old)     < 0.00001):
+                if (abs(alphas[j] - alpha_j_old) < 0.00001):
                     continue
                 alphas[i] += label_matrix[j] * label_matrix[i] * (alpha_j_old - alphas[j])
                 b1 = b - Ei - label_matrix[i] * (alphas[i] - alpha_i_old)*\
                     data_matrix[i,:]*data_matrix[i,:].T - \
                     label_matrix[j]*(alphas[j] - alpha_j_old)* \
                     data_matrix[j,:]*data_matrix[j,:].T
-                b2 = b-Ej-label_matrix[i]*(alphas[i] - alpha_i_old)*\
-                    data_matrix[i,:]*data_matrix[j,:].T - \
-                    label_matrix[j,:]*data_matrix[j,:].T
+                b2 = b - Ej - label_matrix[i] * (alphas[i] - alpha_i_old)*\
+                    data_matrix[i,:]*data_matrix[j,:].T -\
+                    label_matrix[j]*(alphas[j] - alpha_j_old) *\
+                    data_matrix[i,:]*data_matrix[j,:].T
                 if (0 < alphas[i]) and (C > alphas[i]):
                     b = b1
                 elif (0 < alphas[i]) and (C > alphas[j]):
@@ -122,11 +124,37 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
     return b, alphas
 
 
+class OptStruct:
+    def __init__(self, dataMatin, classlabels, C, totel):
+        pass
+
+def calcEk(os, k):
+    pass
+
+def select_j(i, os, Ei):
+    #
+    pass
+
+def update_EK(os, k):
+    # 计算误差并存入到缓存当中
+    pass
+
+
+def inner_L():
+    pass
+
+
+def smo(dataMatIn, class_labels, C, toler, maxIter, kTup=('lin', 0)):
+    pass
+
+
+
 
 if __name__ == '__main__':
     data_array, label_array = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\SvmTestSet.txt')
+    smo(data_array, label_array, 0.6, 0.001, 40)
     #print "data_array",data_array
-    smo_sample(data_array, label_array, 0.6, 0.001, 40)
+    #smo_sample(data_array, label_array, 0.6, 0.001, 40)
 
 
 
