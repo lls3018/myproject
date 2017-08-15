@@ -21,6 +21,9 @@ def select_jrand(i, m):
 
 
 def clip_alpha(aj, H, L):
+    # 如果a大于最大值，a取最大值
+    # 如果a小于最小值，a取最小值
+    # 让a不能超出范围
     if aj > H:
         aj = H
     if L > aj:
@@ -58,7 +61,6 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
     iter = 0
     while (iter < max_inter):
         alpha_pairs_changed = 0
-        print "iter",iter
         for i in range(m):
             #print "alphas",alphas
             #print "data_matrix*data_matrix[i:].T)",data_matrix[i,:]
@@ -75,7 +77,7 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
                 # 目标函数j的表达式
                 fXj = float(multiply(alphas, label_matrix).T * (data_matrix*data_matrix[j,:].T)) + b
                 # 计算其误差
-                Ej = fXi - float(label_matrix[j])
+                Ej = fXj - float(label_matrix[j])
                 # 取出两个系数α
                 alpha_i_old = alphas[i].copy()
                 alpha_j_old = alphas[j].copy()
@@ -112,7 +114,7 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
                     data_matrix[i,:]*data_matrix[j,:].T
                 if (0 < alphas[i]) and (C > alphas[i]):
                     b = b1
-                elif (0 < alphas[i]) and (C > alphas[j]):
+                elif (0 < alphas[j]) and (C > alphas[j]):
                     b = b2
                 else:
                     b = (b1 + b2)/2.0
@@ -126,34 +128,153 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
 
 class OptStruct:
     def __init__(self, dataMatin, classlabels, C, totel):
-        pass
+        self.X = dataMatin
+        self.labelMat = classlabels
+        self.C = C
+        self.tol = totel
+        self.m = shape(dataMatin)[0]
+        self.alphas = mat(zeros((self.m, 1)))
+        self.b = 0
+        self.eCache = mat(zeros((self.m, 2))) # 误差缓存
+
 
 def calcEk(os, k):
-    pass
+    # 计算第K个样本的误差
+    fEk = float(multiply(os.alphas, os.labelMat).T * (os.X * os.X[k,:].T)) + os.b
+    Ei = fEk - float(os.labelMat[k])
+    return Ei
+
 
 def select_j(i, os, Ei):
-    #
-    pass
+    # 启发式方法
+    # 选出其余样本中，与现样本中的误差步长最大的样本
+    maxK = -1; maxDeltaE = 0; Ej = 0
+    os.eCache[i] = [1, Ei]
+    vaildEcacheList = nonzero(os.eCache[:, 0].A)[0]
+    if (len(vaildEcacheList)) > 1:
+        for k in vaildEcacheList:
+            # 遍历误差缓存中数据
+            if k == i:
+                continue
+            # 选出一个新的样本的误差值
+            Ek = calcEk(os, k)
+            # 计算新选出来的样本的误差与已选出来的样本误差步长
+            deltaE = abs(Ei - Ek)
+            if deltaE > maxDeltaE:
+                # 选出最大步长
+                maxDeltaE = deltaE; maxK = k; Ej = Ek
+        return maxK, Ej
 
-def update_EK(os, k):
+
+def update_Ek(os, k):
     # 计算误差并存入到缓存当中
-    pass
+    # 计算当前误差
+    Ek =  calcEk(os, k)
+    # 更新该样本在误差缓存中的误差
+    os.eCache[k] = [1, Ek]
 
 
-def inner_L():
-    pass
+def inner_L(i, os):
+    # 内循环函数
+    # 计算制定样本的误差
+    Ei = calcEk(os, i)
+    # 如果误差超出范围，且α可以被优化
+    if ((os.labelMat[i]*Ei < -os.tol) and (os.alphas < os.C)) or\
+            ((os.labelMat[i]*Ei > os.tol) and (os.alphas > 0)):
+        j, Ej = select_j(i, os, Ei)
+        alpha_i_old = os.alphas[i].copy()
+        alpha_j_old = os.alphas[j].copy()
+        if os.labelMat[i] != os.labelMat[j]:
+            # 如果这两个样本不在一个方向内
+            # 下界
+            L = max(0, os.alphas[j] - os.alphas[i])
+            # 上界
+            H = min(os.C, os.C + os.alphas[j] - os.alphas[i])
+        else:
+            # 如果这两个样本在一个方向内
+            L = max(0, os.alphas[j] + os.alphas[i] - os.C)
+            H = min(os.C, os.alphas[j] + os.alphas[i])
+        if L == H: print "L == H"; return 0
+        eta = 2.0 * os.X[i,:] * os.X[j,:].T - os.X[i,:] * os.X[i,:].T -  os.X[j,:] * os.X[j,:].T
+        if eta >= 0: print "eta >= 0"; return 0
+        # 计算出新的αj
+        os.alphas[j] -= os.labelMat[j] * (Ei - Ej) / eta
+        # αj 要在上下界之间
+        os.alphas[j] = clip_alpha(os.alphas[j], H, L)
+        # 更新样本j误差缓存, 每次都是αi,αj一起优化
+        update_Ek(os, j)
+        if (abs(os.alphas[j] - alpha_j_old) < 0.00001):
+            # 如果优化后αj的变化小于一定阈值，结束优化
+            return 0
+        # αj的变化大于一定值，之后，更新αi
+        os.alphas[i] += os.labelMat[j] * os.labelMat[i] * (alpha_j_old -  os.alphas[j])
+        # 更新样本i误差缓存
+        update_Ek(os, i)
+        # 更新b
+        b1 = os.b - Ei - os.labelMat[i] * (os.alphas[i] - alpha_i_old) *\
+            os.X[i,:] * os.X[i,:].T - os.labelMat[j]*\
+            (os.alphas[j] -  alpha_j_old) * os.X[i,:] * os.X[j,:].T
+        b2 = os.b - Ej - os.labelMat[i] * (os.alphas[i] - alpha_i_old) *\
+            os.X[i,:] * os.X[j,:].T - os.labelMat[j]*\
+            (os.alphas[j] -  alpha_j_old) * os.X[j,:] * os.X[j,:].T
+        if (0 < os.alphas[i]) and (os.C > os.alphas[i]):
+            os.b = b1
+        elif (0 < os.alphas[j]) and (os.C > os.alphas[j]):
+            os.b = b2
+        else:
+            os.b = (b1 + b2) / 2.0
+        return 1 # 优化成功
+    else:
+        return 0 # 优化失败
 
 
 def smo(dataMatIn, class_labels, C, toler, maxIter, kTup=('lin', 0)):
-    pass
+    '''
+    :param dataMatIn: 数据集
+    :param class_labels: 分类标签集合
+    :param C: 弹性系数
+    :param toler: 误差
+    :param maxIter: 最大循环次数
+    :param kTup:
+    :return:
+    '''
+    # 先结构化数据集合
+    os = OptStruct(mat(dataMatIn), mat(class_labels).transpose(), C, toler)
+    iter = 0
+    entireSet = True # true为遍历全集，false为只遍历非边界值
+    alphaPairsChanged = 0
+    while( iter < maxIter ) and ((alphaPairsChanged > 0) or (entireSet)):
+        # 每次循开始时变化值都为0
+        alphaPairsChanged = 0
+        if entireSet:
+            # 遍历所有值
+            for i in range(os.m):
+                # 遍历每一个样本进行优化，计算优化成功的样本数量
+                alphaPairsChanged += inner_L(i, os)
+                print "循环次数:%d, 样本i:%d, 优化成功次数:%d" % (iter, i, alphaPairsChanged)
+                iter += 1
+        else:
+            # 遍历所有非边界值
+            nonBoundIs = nonzero((os.alphas.A > 0) * (os.alphas.A < C))[0]
+            for i in nonBoundIs:
+                alphaPairsChanged += inner_L(i, os)
+            iter += 1
+        if entireSet:
+            entireSet = False
+        elif (alphaPairsChanged == 0):
+            # 当遍历优化之后，变化值仍为0时，退出优化
+            entireSet = False
+    return os.b, os.alphas
 
 
+def test():
+    x1 = np.arange(9.0).reshape((3,3))
 
 
 if __name__ == '__main__':
     data_array, label_array = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\SvmTestSet.txt')
+    # smo 算法，通过不断优化逼近算出α和b,为进一步计算出超平面做准备
     smo(data_array, label_array, 0.6, 0.001, 40)
-    #print "data_array",data_array
     #smo_sample(data_array, label_array, 0.6, 0.001, 40)
 
 
