@@ -164,6 +164,10 @@ def select_j(i, os, Ei):
                 # 选出最大步长
                 maxDeltaE = deltaE; maxK = k; Ej = Ek
         return maxK, Ej
+    else:
+        j = select_jrand(i, os.m)
+        Ej = calcEk(os, j)
+    return maxK, Ej
 
 
 def update_Ek(os, k):
@@ -179,8 +183,8 @@ def inner_L(i, os):
     # 计算制定样本的误差
     Ei = calcEk(os, i)
     # 如果误差超出范围，且α可以被优化
-    if ((os.labelMat[i]*Ei < -os.tol) and (os.alphas < os.C)) or\
-            ((os.labelMat[i]*Ei > os.tol) and (os.alphas > 0)):
+    if ((os.labelMat[i]*Ei < -os.tol) and (os.alphas[i] < os.C)) or\
+            ((os.labelMat[i]*Ei > os.tol) and (os.alphas[i] > 0)):
         j, Ej = select_j(i, os, Ei)
         alpha_i_old = os.alphas[i].copy()
         alpha_j_old = os.alphas[j].copy()
@@ -251,7 +255,7 @@ def smo(dataMatIn, class_labels, C, toler, maxIter, kTup=('lin', 0)):
             for i in range(os.m):
                 # 遍历每一个样本进行优化，计算优化成功的样本数量
                 alphaPairsChanged += inner_L(i, os)
-                print "循环次数:%d, 样本i:%d, 优化成功次数:%d" % (iter, i, alphaPairsChanged)
+                print u"循环次数:%d, 样本i:%d, 优化成功次数:%d" % (iter, i, alphaPairsChanged)
                 iter += 1
         else:
             # 遍历所有非边界值
@@ -267,6 +271,17 @@ def smo(dataMatIn, class_labels, C, toler, maxIter, kTup=('lin', 0)):
     return os.b, os.alphas
 
 
+def calculate_w(alphas, data, labels):
+    # 计算出分类函数系数w
+    X = mat(data)
+    Y = mat(labels).transpose()
+    m,n = shape(X)
+    w = zeros((n,1))
+    for i in range(m):
+        w += multiply(alphas[i]*Y[i], X[i,:].T)
+    return w
+
+
 def test():
     x1 = np.arange(9.0).reshape((3,3))
 
@@ -274,9 +289,12 @@ def test():
 if __name__ == '__main__':
     data_array, label_array = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\SvmTestSet.txt')
     # smo 算法，通过不断优化逼近算出α和b,为进一步计算出超平面做准备
-    smo(data_array, label_array, 0.6, 0.001, 40)
-    #smo_sample(data_array, label_array, 0.6, 0.001, 40)
-
+    b, alphas = smo(data_array, label_array, 0.6, 0.001, 40)
+    ws = calculate_w(alphas, data_array, label_array)
+    print "wwwwwwwwwwwww", ws
+    # 计算样本的分类结果 y = wX + b
+    dataMat = mat(data_array)
+    print dataMat[0]*mat(ws) + b
 
 
 
