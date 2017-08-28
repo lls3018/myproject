@@ -136,16 +136,3 @@ if __name__ == '__main__':
     ax.scatter(xMat[:,1].flatten().A[0], mat(yArr).T.flatten().A[0], s=2, c='red')
     plot.show()
     '''
-    '''
-    xMat = mat(xArr); yMat = mat(yArr)
-    YH = xMat * ws
-    print corrcoef(YH.T, yMat)
-    fig = plot.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(xMat[:,1].flatten().A[0], yMat.T[:,0].flatten().A[0])
-    xCopy = xMat.copy()
-    xCopy.sort(0)
-    YH = xCopy * ws
-    ax.plot(xCopy[:,1], YH)
-    plot.show()
-    '''
