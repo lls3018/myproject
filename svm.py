@@ -126,8 +126,23 @@ def smo_sample(data_mat_in, class_labels, C, error_tolerant, max_inter):
     return b, alphas
 
 
+def kernelTrans(X, A, kTup):
+    m,n = shape(X)
+    K = mat(zeros((m,1)))
+    if kTup[0] == 'lin':
+        K = X * A.T
+    elif kTup[0] == 'rbf':
+        for j in range(m):
+            deltaRow = X[j,:] - A
+            K[j] = deltaRow * deltaRow.T
+        K = exp(K / (-1 * kTup ** 2))
+    else:
+        raise ('kernel is not recognized')
+    return K
+
+
 class OptStruct:
-    def __init__(self, dataMatin, classlabels, C, totel):
+    def __init__(self, dataMatin, classlabels, C, totel, kTup):
         self.X = dataMatin
         self.labelMat = classlabels
         self.C = C
@@ -136,6 +151,9 @@ class OptStruct:
         self.alphas = mat(zeros((self.m, 1)))
         self.b = 0
         self.eCache = mat(zeros((self.m, 2))) # 误差缓存
+        self.K = mat(zeros((self.m, self.m)))
+        for i in range(self.m):
+            self.K[:,i] = kernelTrans(self.X, self.X[i,:], kTup)
 
 
 def calcEk(os, k):
@@ -295,6 +313,4 @@ if __name__ == '__main__':
     # 计算样本的分类结果 y = wX + b
     dataMat = mat(data_array)
     print dataMat[0]*mat(ws) + b
-
-
 
