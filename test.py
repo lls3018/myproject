@@ -19,3 +19,4 @@ print var(data)
 # mean(data, 0), 压缩行对列求平均值
 # mean(data, 1), 压缩列对行求平均值
 # var(data) 求方差 S =  1/(N-1)*∑(Xi - mean(X))**2, 计算样本每个值的方差
+# power(data, num) num次方 power(5,2) == 25

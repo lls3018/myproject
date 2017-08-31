@@ -47,7 +47,7 @@ def choose_best_split(data_set, leaf_type=reg_leaf, error_type=reg_error, ops=(1
     '''
         找出最佳的分类方式，找到了，返回分列特性index和分列特性value
         如果找不到返回None并调用create_tree 生成叶子节点
-        ops 控制函数的停止时机
+        ops 控制函数的停止时机,误差和几点最少样本数
     '''
     tolS = ops[0]; tolN = ops[1]
     # 如果所有值都相同退出
@@ -84,7 +84,6 @@ def choose_best_split(data_set, leaf_type=reg_leaf, error_type=reg_error, ops=(1
     return best_index, best_value
 
 
-"""
 def create_tree(data_set, leaf_type=reg_leaf, error_type=reg_error, ops=(1,4)):
     '''
     # 找到最佳待切分特征：
@@ -103,19 +102,105 @@ def create_tree(data_set, leaf_type=reg_leaf, error_type=reg_error, ops=(1,4)):
     ret_tree['left'] = create_tree(left_set, leaf_type, error_type, ops)
     ret_tree['right'] = create_tree(right_set, leaf_type, error_type, ops)
     return ret_tree
-"""
+
+
+def is_tree(obj):
+    # 判断输入变量是否是一个树
+    return (type(obj).__name__ == 'dict')
+
+
+def get_mean(tree):
+    '''
+        # 从上到下遍历树直到叶子节点
+        # 如果有两个叶节点，计算他们的平均值
+    '''
+    if is_tree(tree['right']):
+        tree['right'] = get_mean(tree['right'])
+    if is_tree(tree['left']):
+        tree['left'] = get_mean(tree['left'])
+    return (tree['left']+tree['right'])/2.0
+
+
+def prune(tree, test_data):
+    '''
+        tree 待剪枝树
+        对树进行剪枝
+        计算将两个叶子节点合并后的误差
+        计算不合并的误差
+        如果合并能降低误差，就合并
+    '''
+    if shape(test_data)[0] == 0:
+        return get_mean(tree)
+    if (is_tree(tree['left'])) or (is_tree(tree['right'])):
+        left_set, right_set = bin_split_data_set(test_data, tree['spInd'], tree['spVal'])
+    if is_tree(tree['left']):
+        tree['left'] = prune(tree('left'), left_set)
+    if is_tree(tree['right']):
+        tree['right'] = prune(tree('right'), right_set)
+    # 当左右两边都不是树，是叶子节点的时候
+    if not is_tree(tree['left']) and not is_tree(tree['right']):
+        left_tree, right_tree = bin_split_data_set(test_data, tree['spInd'], tree['spVal'])
+        error_no_merge = sum(power(left_set[:,-1] - tree['left'], 2)) + sum(power(right_tree[:,-1] - tree['right'], 2))
+        tree_mean = (tree['left']+tree['right'])/2.0
+        error_merge = sum(power(test_data[:,-1] - tree_mean, 2))
+        if error_merge < error_no_merge:
+            print "merge"
+            return tree_mean
+        else:
+            return tree
+    else:
+        return tree
+
+
+def linear_solve(data_set):
+    '''
+    '''
+    m,n = shape(data_mat)
+    X = mat(ones((m,n))); Y = mat(ones((m,1)))
+    X[:, 1:n] = data_set[:,0:n-1]
+    Y = data_set[:,-1]
+    xTx = X.T*X
+    if linalg.det(xTx) == 0.0:
+        raise NameError('This matrix is singular')
+    ws = xTx.I * (X.T * Y)
+    return ws, X, Y
+
+
+def model_leaf(data_set):
+    '''
+    '''
+    ws, X, Y = linear_solve(data_set)
+    return ws
+
+
+def model_error(data_set):
+    '''
+    '''
+    ws, X, Y = linear_solve(data_set)
+    yHat = X * ws
+    return sum(power((Y - yHat),2))
+
+
+def reg_trees_eval(model, in_data):
+    return float(model)
+
+
+def model_tree_eval(model, in_data):
+    n = shape(in_data)[1]
+    X = mat(ones((1, n+1)))
+    X[:, 1:n+1] = in_data
+    return float(X*model)
+
+
+def tree_fore_cast(tree, in_data, model_eval):
+    '''
+        输入单个数据或者行向量，返回浮点型
+    '''
+
 
 if __name__ == '__main__':
-    test_mat = mat(eye(4))
-    mat0, mat1 = bin_split_data_set(test_mat, 1, 0.5)
-    print mat0,mat1
-
-
-
-
-
-
-
-
+    data = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\ex00.txt')
+    data_mat = mat(data)
+    create_tree(data_mat)
 
 
