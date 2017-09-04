@@ -43,7 +43,7 @@ def k_means(data_set, K, dist_means=distEclud, create_cent=rand_cent):
     :param K:
     :param dist_means:
     :param create_cent:
-    :return:
+    :return: 返回质心列表和分簇表
     '''
     m = shape(data_set)[0]
     cluster_assment = mat(zeros((m,2)))
@@ -66,7 +66,7 @@ def k_means(data_set, K, dist_means=distEclud, create_cent=rand_cent):
             if cluster_assment[i,0] != min_index:
                 # 最近的质心没有发生变化，退出
                 cluster_changed = True
-            # 存储样本i的最小质心和到质心的距离平方
+            # 存储样本i的最小质心和到质心的距离平方，方差
             cluster_assment[i,:] = min_index, min_dist**2
         # 更新质心位置
         for cent in range(K):
@@ -94,6 +94,30 @@ def bin_kmeans(data_set, K, dist_means=distEclud):
     '''
     m = shape(data_set)[0]
     cluster_assment = mat(zeros((m,2)))
+    # 初始质心是样本集平均值
+    centroid0 = mean(data_set, axis=0).tolist()[0]
+    cent_list = [centroid0]
+    for j in range(m):
+        cluster_assment[j, 1] = dist_means(mat(centroid0), data_set[j,:])**2
+    while (len(cent_list) < K):
+        lowest_SSE = inf
+        for i in range(len(cent_list)):
+            # 尝试划分每一个簇
+            current_cluster = data_set[nonzero(cluster_assment[:,0].A==i)[0],:]
+            # 将当前簇分成两个簇
+            centroid_mat, split_cluster = k_means(current_cluster, 2, dist_means)
+            # 计算分成两个簇之后的误差
+            sse_split = sum(split_cluster[:,1])
+            sse_no_split = sum(cluster_assment[nonzero(cluster_assment[:,0].A==i)[0],1])
+            if (sse_split + sse_no_split) < lowest_SSE:
+                best_cent_to_split = i
+                best_new_cents = centroid_mat
+                best_cluster_ass = split_cluster.copy()
+                lowest_SSE = sse_split + sse_no_split
+        # 更新簇的分配结果
+        
+
+
 
 
 if __name__ == '__main__':
