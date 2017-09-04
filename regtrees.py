@@ -198,6 +198,7 @@ def tree_fore_cast(tree, in_data, model_eval):
     '''
 
 
+
 if __name__ == '__main__':
     data = loadDataSet('C:\Users\user\Desktop\work\projects\myproject\data\ex00.txt')
     data_mat = mat(data)
