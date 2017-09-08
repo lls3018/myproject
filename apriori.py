@@ -88,6 +88,7 @@ def apriori(data_set, min_support=0.5):
     return L, support_data
 
 
+
 if __name__=='__main__':
     pass
 
