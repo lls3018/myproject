@@ -88,9 +88,74 @@ def apriori(data_set, min_support=0.5):
     return L, support_data
 
 
+def calculate_conf(freq_set, H, support_data, brl, min_conf=0.7):
+    '''
+    计算可信度
+    :param freq_set:
+    :param H:
+    :param support_data:
+    :param brl:前面通过检查的big_rule_list
+    :param min_conf:
+    :return:
+    '''
+    prunedH = []
+    for conseq in H:
+        conf = support_data[freq_set]/support_data[freq_set-conseq]
+        if conf >= min_conf:
+            print freq_set-conseq,'-->',conseq,'conf:',conf
+            brl.append((freq_set-conseq, conseq, conf))
+            prunedH.append(conseq)
+    return prunedH
+
+
+
+def rules_from_conseq(freq_set, H, support_data, brl, min_conf=0.7):
+    '''
+    合并函数
+    :param freq_set:
+    :param H:
+    :param support_data:
+    :param brl:
+    :param min_conf:
+    :return:
+    '''
+    m = len(H[0])
+    if (len(freq_set) > (m+1)):
+        Hmp1 = apriori_gen(H, m+1)
+        Hmp1 = calculate_conf(freq_set, Hmp1, support_data, brl, min_conf)
+        if (len(Hmp1) > 1):
+            rules_from_conseq(freq_set, Hmp1, support_data, brl, min_conf)
+
+
+
+def generate_rules(L, support_data, min_conf=0.7):
+    '''
+    生成一个可信度列表
+    :param L:频繁项集列表
+    :param support_data:包含频繁项集支持数据字典
+    :param min_conf:最小可信度
+    :return:包含可信度的规则列表
+    '''
+    big_rule_list = []
+    # 遍历每一个频繁项集，为每个项集创建一个包含单元素的列表H1
+    for i in range(1, len(L)):
+        for freq_set in L[i]:
+            # {0，1，2} ==> L[i] = [{0},{1},{2}]
+            H1 = [frozenset([item]) for item in freq_set]
+            # 如果频繁项集元素个数超过2,进行合并
+            if i > 1:
+                rules_from_conseq(freq_set, H1, support_data, big_rule_list, min_conf)
+            # 如果只有两个元素，那么计算可信度
+            else:
+                calculate_conf(freq_set, H1, support_data, big_rule_list, min_conf)
+    return big_rule_list
+
+
 
 if __name__=='__main__':
-    pass
+    data_set = loadDataSet()
+    L, support_data = apriori(data_set, min_support=0.5)
+    rules = generate_rules(L, support_data, min_conf=0.5)
 
 
 
