@@ -22,6 +22,13 @@ class tree_node():
             child.disp(ind+1)
 
 
+def create_init_set(data_set):
+    ret_dict = {}
+    for trans in data_set:
+        ret_dict[frozenset(trans)] = 1
+    return ret_dict
+
+
 def create_tree(data_set, min_support=1):
     '''
     1.需要遍历数据两次，一次扫描所有元素出现的频率，
@@ -116,6 +123,7 @@ def ascend_tree(leaf_node, prefix_path):
 
 def find_prefix_path(base_pat, tree_node):
     '''
+
     :param base_pat:
     :param tree_node:
     :return:
@@ -130,6 +138,29 @@ def find_prefix_path(base_pat, tree_node):
     return cond_pats
 
 
+def min_tree(in_tree, header_table, min_sup, prefix, freq_item_list):
+    '''
+    递归查找频繁项集
+    :param in_tree:
+    :param header_table: 头指针表{'a':[6,None], 'b':[3,None],...}
+    :param min_sup:
+    :param prefix:
+    :param freq_item_list:
+    :return:
+    '''
+    # 头指针表中的元素按照出现频率进行排序，从小到大
+    big_L = [v[0] for v in sorted(header_table.items(), key=lambda p:p[1])]
+    for base_pat in big_L:
+        new_freq_set = prefix.copy()
+        new_freq_set.add(base_pat)
+        freq_item_list.append(new_freq_set)
+        # 创建条件基
+        cond_patt_bases = find_prefix_path(base_pat, header_table[base_pat][1])
+        my_cond_tree, my_head = create_tree(cond_patt_bases, min_sup)
+        if my_head != None:
+            min_tree(my_cond_tree, my_head, min_sup, new_freq_set, freq_item_list)
+
+
 if __name__ == '__main__':
     '''
     使用FP树高效发现频繁项集
@@ -138,17 +169,21 @@ if __name__ == '__main__':
         1.遍历数据集获得每个元素的出现频率
         2.缺掉不满足最小支持度元素项
         3.读入每个项集，将其添加到一条已经存在的路径中，如果该路径不存在创建一条新的
-
     }
     2.创建条件FP树{
         1.找到条件模式基:是以查找元素项为结尾的路径集合，例如以元素'a'为结尾的路径集合
     }
     '''
-    root_node = tree_node('pyramid', 9, None)
-    root_node.children['eye'] = tree_node('eye', 13, None)
-    root_node.display()
-    # 先进行排序
-    #
-
+    #root_node = tree_node('pyramid', 9, None)
+    #root_node.children['eye'] = tree_node('eye', 13, None)
+    #root_node.display()
+    parse_data = [line.split() for line in open('C:\Users\user\Desktop\work\projects\myproject\data\kosarak.dat').readlines()]
+    init_set = create_init_set(parse_data)
+    # 使用前10万条数据生成树
+    my_fp_tree, my_header_table = create_tree(init_set, 100000)
+    # 找出频繁项集
+    my_freq_list = []
+    min_tree(my_fp_tree, my_header_table, 100000, set([]), my_freq_list)
+    print len(my_freq_list), my_freq_list
 
 
