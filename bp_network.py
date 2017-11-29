@@ -46,23 +46,39 @@ class NeuralNetwork(object):
         :return:
         '''
         X = np.atleast_2d(X)
+        print "X",X
+        # 产生单位矩阵
         temp = np.ones([X.shape[0], X.shape[1]+1])
+        print "temp",temp
+        print "temp1",temp[:,0:-1]
         temp[:,0:-1] = X
+        print "temp",temp
         X = temp
+        print "X",X
         y = np.array(y)
+        print "y",y
         for k in range(epochs):
             # 随机选一行进行更新
             i = np.random.randint(X.shape[0])
+            print "X[i]",X[i]
             a = [X[i]]
+            print "a",[X[i]]
             # 完成所有正向更新,更新权重
             for l in range(len(self.weights)):
+                print "a[l]",a[l]
+                print "self.weights[l]",self.weights[l]
+                print "dot", np.dot(a[l], self.weights[l])
                 a.append(self.activation(np.dot(a[l], self.weights[l])))
+                print "a",a[-1]
                 error = y[i] - a[-1]
+                print "error",error
                 deltas = [error * self.activation_deriv(a[-1])]
+                print "deltas",deltas
                 #反向计算误差，更新权重
                 for l in range(len(a)-2, 0, -1):
                     deltas.append(deltas[-1].dot(self.weights[l].T) * self.activation_deriv(a[l]))
                     deltas.reverse()
+                print "deltas",deltas
                 for i in range(len(self.weights)):
                     layer = np.atleast_2d(a[i])
                     delta = np.atleast_2d(deltas[i])
