@@ -24,5 +24,5 @@ import numpy as np
 #print np.dot([1,2,3], [4,5,6])
 #print np.ones(5)
 print np.random.random((3,3))
-
+import pybrain
 
