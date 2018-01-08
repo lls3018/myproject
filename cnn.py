@@ -1,5 +1,8 @@
 # -*- coding:utf-8 -*-
 __author__ = 'leon'
+import numpy
+from theano.tensor.nnet import conv
+
 '''
     0.输入28*28
     1.6个5x5卷积核，生成6个24x24图片
@@ -10,6 +13,47 @@ __author__ = 'leon'
 '''
 def func(x):
     return x
+
+# 卷积一层的数据结构
+c1 = {
+    # 6个卷积核5x5
+    'num': 6,
+    'kernel': [[1],[2],[3],[4],[5],[6]],
+    'bias': [1,2,3,4,5,6]
+}
+
+class Conv1(object):
+    def __init__(self):
+        # 卷积一层数据
+        self.params = {
+            'num': 6,
+            'kernel': [[1],[2],[3],[4],[5],[6]],
+            'bias': [1,2,3,4,5,6],
+            'u': [] # 未经过激活函数的数据，之后进行敏感度计算需要
+        }
+        # 本层灵敏度，由下一层计算得到，赋值给本层
+        self.delta = None
+
+    def func(self, u):
+        # 激活函数
+        return u
+
+    def func_diff(self):
+        # 激活函数求导
+        return (1-self.params['u'])*self.params['u']
+
+    def forward(self, input):
+        out = []
+        for i in range(0, self.params['num']):
+            u = conv(input, self.params['kernel'][i]) + self.params['bias'][i]
+            self.params['u'].append(u)
+            out.append(self.func(u))
+        return out
+
+    def backward(self):
+        # 根据本层灵敏度计算梯度
+
+
 
 def conv1(sample_data, kernels, bias):
     # 每次输入与一个卷积核进行卷积操作
@@ -52,12 +96,18 @@ def last_out(inputs, wights, bias):
         result.append(func(reduce(lambda x,y: x+y, inputs*wights[i])+bias[i]))
     return result
 
+def update_s4(sens_list):
+    # o5层有10个神经元，s4层
+
+
 def cnn():
     # 面向流程
     # 0.输入28*28
     sample_data = load_sample()
     # 6个5x5卷积核，生成6个24x24图片
     kernels = [[],[],[],[],[],[]]
+    # 卷积一层的数据结构
+
     bias = []
     out1 = conv2(sample_data, kernels, bias)
     # 2x2采样缩小一半，生成6个12x12图片
@@ -72,7 +122,14 @@ def cnn():
     y = last_out(out4)
     # 然后进行误差计算,进行反向传到
     error = loss(b, y)
-    # 反向传递参数
+    # 计算o5层，各个神经元的灵敏度准备向前传播，更新o5十个神经元的w和b
+    o5_sen_list = update_o5()
+    # 十个神经元十个敏感度，对应s4层的每个元素都有贡献
+    # s4层有12*4*4个像素，相当于每个像素都有敏感度
+    update_s4(o5_sen_list)
+
+
+
 
 
 class ConLayer(object):
