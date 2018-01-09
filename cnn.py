@@ -102,12 +102,14 @@ class FullLayer5(object):
     def backward(self):
         pass
 
-def calculate_error():
-    pass
+
+def calculate_error(d, y):
+    return d - y
+
 
 if __name__ == '__main__':
     image = None
-    value = []
+    value = numpy.asarray([0,1,2,3,4,5,6,7,8,9])
     C1 = ConvLayer1()
     S2 = PoolLayer2()
     C3 = ConvLayer3()
@@ -118,7 +120,7 @@ if __name__ == '__main__':
     out3 = C3.forward(out2)
     out4 = S4.forward(out3)
     out5 = F5.forward(out4)
-    error_list = calculate_error(out5, value)
+    error_list = calculate_error(value, out5)
     delta4 = F5.backward(error_list)
     delta3 = S4.backward(delta4)
     delta2 = C3.backward(delta3)
