@@ -13,6 +13,15 @@ from theano.tensor.nnet import conv
 '''
 
 
+def func(x):
+    # 激活函数
+    return x
+
+
+def func_diff(x):
+    # 激活函数导数
+    return x*(1-x)
+
 class ConvLayer1(object):
     '''
         接受输入28*28图像
@@ -93,18 +102,48 @@ class PoolLayer4(object):
 
 
 class FullLayer5(object):
-    def __init__(self):
-        pass
+    def __init__(self, learning_rate=0.5):
+        self.learning_rate = learning_rate
+        # 神经元个数为10
+        self.nerve_num = 10
+        # 输出为10位全连接神经元
+        self.output = numpy.zeros(self.nerve_num)
+        # 本层灵敏度
+        self.delta = numpy.zeros(self.nerve_num)
+        # 12*4*4*10=1920个参数
+        self.w = numpy.random.rand(10, 12*4*4)
+        # 10个神经元10个偏置项
+        self.b = []
+        # S4层输出值,被平铺后
+        self.array_x = numpy.zeros(12*4*4)
+        # 激活函数
+        self.func = func
+        self.func_diif = func_diff
 
-    def forward(self):
-        pass
+    def forward(self, images):
+        """
+        :param images: 12张4x4图像
+        """
+        # 将所有图像展开一维192向量
+        self.array_x = numpy.concatenate(map(lambda x: x.ravel(), images))
+        for i in range(0, self.nerve_num):
+            self.output[i] = self.func(numpy.dot(self.w[i],self.array_x)+self.b[i])
 
-    def backward(self):
-        pass
-
-
-def calculate_error(d, y):
-    return d - y
+    def backward(self, value):
+        # 计算误差
+        error = value - self.output
+        # 计算灵敏度
+        for i in range(0, self.nerve_num):
+            self.delta[i] = (-1)*func_diff(self.output[i])
+        # 计算b梯度，最外层b梯度就等于灵敏度
+        gradient_b = self.delta
+        # 计算w梯度==灵敏度*S4层输出 12*4*4*10个梯度
+        gradient_w = self.delta.T*self.output
+        # 更新参数
+        self.b -= self.learning_rate*gradient_b
+        self.w -= self.learning_rate*gradient_w
+        # 返回本层灵敏度
+        return self.delta
 
 
 if __name__ == '__main__':
@@ -120,8 +159,7 @@ if __name__ == '__main__':
     out3 = C3.forward(out2)
     out4 = S4.forward(out3)
     out5 = F5.forward(out4)
-    error_list = calculate_error(value, out5)
-    delta4 = F5.backward(error_list)
+    delta4 = F5.backward(value)
     delta3 = S4.backward(delta4)
     delta2 = C3.backward(delta3)
     delta1 = S2.backward(delta2)
