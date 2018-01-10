@@ -22,9 +22,9 @@ def func(x):
     return x
 
 
-def func_diff(x):
+def func_diff(u):
     # 激活函数导数
-    return x*(1-x)
+    return func(u)*(1-func(u))
 
 class ConvLayer1(object):
     '''
@@ -89,20 +89,28 @@ class ConvLayer3(object):
         self.kernel = numpy.random.random((12,6,5,5))
         # 本层偏置项12个
         self.bias = numpy.random.random(12)
+        # 存储输出
+        self.output = numpy.random.random((12,8,8))
+        # 本层输出的灵敏度
+        self.delta = numpy.random.random((12,8,8))
 
     def forward(self, images):
         # 输入6张12x12图像，输出12张8x8图像
         output = []
         for i in range(0, self.bias.shape[0]):
             output.append(func(reduce(lambda x,y: x+y, map(lambda x,y: conv(x,y), images, self.kernel[i])) + self.bias[i]))
-        return numpy.asarray(output)
+        self.output = numpy.asarray(output)
+        return self.output
 
     def backward(self, next_delta):
         # 计算本层梯度，并回传
         # 上采样，将灵敏度图恢复采样前大小
-        delta = upsample(next_delta)
-
-
+        # 根据BP灵敏度传递, delta=()
+        self.delta = upsample(next_delta)*func_diff(self.output)
+        # 计算b的梯度
+        gradient_b = map(lambda x: numpy.sum(x), self.delta)
+        # 计算w的梯度,w是卷积核元素
+        #gradient_w =
 
 class PoolLayer4(object):
     def __init__(self):
