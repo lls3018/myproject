@@ -1,7 +1,9 @@
 # -*- coding:utf-8 -*-
 __author__ = 'leon'
 import numpy
+import tensorflow as tf
 from theano.tensor.nnet import conv
+
 
 '''
     0.输入28*28
@@ -12,6 +14,8 @@ from theano.tensor.nnet import conv
     5.将12个4x4图像展开得到12*4*4=192维向量，输出层有10个神经元，每个神经元与192位相连
 '''
 
+def upsample(image):
+    return image
 
 def func(x):
     # 激活函数
@@ -81,24 +85,43 @@ class PoolLayer2(object):
 
 class ConvLayer3(object):
     def __init__(self):
-        pass
+        # 本层12组每组6个5x5卷积核
+        self.kernel = numpy.random.random((12,6,5,5))
+        # 本层偏置项12个
+        self.bias = numpy.random.random(12)
 
-    def forward(self):
-        pass
+    def forward(self, images):
+        # 输入6张12x12图像，输出12张8x8图像
+        output = []
+        for i in range(0, self.bias.shape[0]):
+            output.append(func(reduce(lambda x,y: x+y, map(lambda x,y: conv(x,y), images, self.kernel[i])) + self.bias[i]))
+        return numpy.asarray(output)
 
-    def backward(self):
-        pass
+    def backward(self, next_delta):
+        # 计算本层梯度，并回传
+        # 上采样，将灵敏度图恢复采样前大小
+        delta = upsample(next_delta)
+
 
 
 class PoolLayer4(object):
     def __init__(self):
-        pass
+        # 本层输出12个4x4图像，灵敏度4*4*12
+        self.delta = numpy.random.random((12,4,4))
 
-    def forward(self):
-        pass
+    def downsample(self, image):
+        return tf.nn.avg_pool(image)
 
-    def backward(self):
-        pass
+    def forward(self, images):
+        """
+        :param images: 输入为12个8x8图像,输出为12个4x4图像
+        """
+        return map(lambda x: self.downsample(x), images)
+
+    def backward(self, next_delta):
+        # 本层没有参数主要任务就是将灵敏度上传
+        self.delta = numpy.sum(next_delta, axis=0).reshape((12,4,4))
+        return self.delta
 
 
 class FullLayer5(object):
@@ -108,7 +131,7 @@ class FullLayer5(object):
         self.nerve_num = 10
         # 输出为10位全连接神经元
         self.output = numpy.zeros(self.nerve_num)
-        # 本层灵敏度
+        # 本层10个灵敏度
         self.delta = numpy.zeros(self.nerve_num)
         # 12*4*4*10=1920个参数
         self.w = numpy.random.rand(10, 12*4*4)
@@ -134,11 +157,11 @@ class FullLayer5(object):
         error = value - self.output
         # 计算灵敏度
         for i in range(0, self.nerve_num):
-            self.delta[i] = (-1)*func_diff(self.output[i])
+            self.delta[i] = (-1)*error[i]*func_diff(self.output[i])
         # 计算b梯度，最外层b梯度就等于灵敏度
         gradient_b = self.delta
         # 计算w梯度==灵敏度*S4层输出 12*4*4*10个梯度
-        gradient_w = self.delta.T*self.output
+        gradient_w = numpy.asarray(numpy.vstack(map(lambda x: self.array_x*x, self.delta)))
         # 更新参数
         self.b -= self.learning_rate*gradient_b
         self.w -= self.learning_rate*gradient_w
@@ -159,8 +182,8 @@ if __name__ == '__main__':
     out3 = C3.forward(out2)
     out4 = S4.forward(out3)
     out5 = F5.forward(out4)
-    delta4 = F5.backward(value)
-    delta3 = S4.backward(delta4)
+    delta5 = F5.backward(value)
+    delta3 = S4.backward(delta5)
     delta2 = C3.backward(delta3)
     delta1 = S2.backward(delta2)
     C1.backward(delta1)

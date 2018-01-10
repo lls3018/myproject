@@ -113,7 +113,20 @@ print(np.split(A,2,axis=1)) #将A进行分割，分成两个array，按行等量
 print(np.array_split(A,3,axis=1)) #将A进行分割，按行分成三个array，可以进行不等量分割
 print(np.vsplit(A,3)) #将A横向平均分割成3块
 print(np.hsplit(A,2)) #将A纵向平均分割成2块
-a = np.arange(4)
+a = np.array([1,2,3,4,5])
+b = np.array([2,4,5])
+c = a*b[0]
+d = a*b[1]
+e = a*b[2]
+mm = map(lambda x: a*x, b)
+#print(mm)
+print(np.vstack(map(lambda x: a*x, b)))
+print(np.random.random((12,4,4)))
+a = np.array([[1,1,1,1], [2,2,2,2]])
+print(np.sum(a,axis=0))
+print(np.arange(0,192,1).reshape((12,4,4)))
+print(np.array([1,2,3,4,5]).shape[0])
+print(np.arange(0,1800,1).reshape((12,6,5,5))[0].shape)
 
 
 
